@@ -22,6 +22,7 @@ const newCycleFormValidationSchema = zod.object({
 type NewCycleFormData = zod.infer<typeof newCycleFormValidationSchema>;
 
 interface CycleContextData {
+  cycles: Cycle[];
   activeCycle: Cycle | undefined;
   activeCycleId: string | null;
   amountSecondsPassed: number;
@@ -136,6 +137,7 @@ export const CycleProvider: React.FC<ICycleProviderProps> = ({ children }) => {
 
   const providerValue = useMemo(
     () => ({
+      cycles,
       activeCycle,
       activeCycleId,
       amountSecondsPassed,
@@ -144,6 +146,7 @@ export const CycleProvider: React.FC<ICycleProviderProps> = ({ children }) => {
       createNewCycle,
     }),
     [
+      cycles,
       activeCycle,
       activeCycleId,
       amountSecondsPassed,
