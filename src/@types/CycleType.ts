@@ -8,3 +8,8 @@ export type Cycle = {
   interruptedDate?: Date;
   fineshedDate?: Date;
 };
+
+export interface CyclesState {
+  cycles: Cycle[];
+  activeCycleId: string | null;
+}

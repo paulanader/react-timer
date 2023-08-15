@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable prettier/prettier */
 import {
   createContext,
@@ -5,11 +6,19 @@ import {
   useContext,
   useMemo,
   useState,
+  useReducer,
+  useEffect,
 } from "react";
 import { Cycle } from "../@types/CycleType";
 import { differenceInSeconds } from "date-fns";
 import * as zod from "zod";
 import { UseFormReset } from "react-hook-form";
+import { cyclesReducer } from "../reducers/cycles/reducers";
+import {
+  addNewCycleAction,
+  interruptCurrentCycleAction,
+  markCurrentCycleAsFineshedAction,
+} from "../reducers/actions";
 
 const newCycleFormValidationSchema = zod.object({
   task: zod.string().min(1, "informe a tarefa"),
@@ -54,24 +63,30 @@ export const useCycles = () => {
 };
 
 export const CycleProvider: React.FC<ICycleProviderProps> = ({ children }) => {
-  const [cycles, setCycles] = useState<Cycle[]>([]);
-  const [activeCycleId, setActiveCycleId] = useState<string | null>(null);
+  const [cyclesState, dispatch] = useReducer(
+    cyclesReducer,
+
+    {
+      cycles: [],
+      activeCycleId: null,
+    }
+  );
+
   const [amountSecondsPassed, setAmountSecondPassed] = useState(0);
+
+  useEffect(() => {
+    const stateJSON = JSON.stringify(cyclesState);
+
+    localStorage.setItem("@ignite-timer:cycles-state", stateJSON);
+  }, [cyclesState]);
+
+  const { cycles, activeCycleId } = cyclesState;
 
   const activeCycle = cycles.find((cycle) => cycle.id === activeCycleId);
 
   const handleInterruptCycle = useCallback(() => {
-    setCycles((state) =>
-      state.map((cycle) => {
-        if (cycle === activeCycle) {
-          return { ...cycle, interruptDate: new Date() };
-        } else {
-          return cycle;
-        }
-      })
-    );
-    setActiveCycleId(null);
-  }, [activeCycle]);
+    dispatch(interruptCurrentCycleAction());
+  }, [activeCycleId]);
 
   const markCycleAsFineshed = useCallback(
     (totalSeconds: number) => {
@@ -85,15 +100,7 @@ export const CycleProvider: React.FC<ICycleProviderProps> = ({ children }) => {
           );
 
           if (secondsDifference >= totalSeconds) {
-            setCycles((state) =>
-              state.map((cycle) => {
-                if (cycle.id === activeCycleId) {
-                  return { ...cycle, fineshedDate: new Date() };
-                } else {
-                  return cycle;
-                }
-              })
-            );
+            dispatch(markCurrentCycleAsFineshedAction());
 
             setAmountSecondPassed(totalSeconds);
             clearInterval(interval);
@@ -125,8 +132,7 @@ export const CycleProvider: React.FC<ICycleProviderProps> = ({ children }) => {
         startDate: new Date(),
       };
 
-      setCycles((cycles) => [...cycles, newCycle]);
-      setActiveCycleId(newCycle.id);
+      dispatch(addNewCycleAction(newCycle));
 
       setAmountSecondPassed(0);
 
